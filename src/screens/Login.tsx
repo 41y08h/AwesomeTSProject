@@ -14,10 +14,11 @@ import {useAuth} from '../contexts/AuthContext';
 export default function Login({navigation}) {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const {login} = useAuth();
+  const {authenticate} = useAuth();
 
   async function handleSubmit() {
-    await login.mutate({
+    authenticate.mutateAsync({
+      type: 'login',
       username,
       password,
     });

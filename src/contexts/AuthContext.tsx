@@ -4,17 +4,23 @@ import {createContext, FC, useContext} from 'react';
 import jwtDecode from 'jwt-decode';
 import {IUser} from '../interfaces/User';
 import {Text} from 'react-native';
-import {useMutation, useQuery, useQueryClient} from 'react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  UseMutationResult,
+} from 'react-query';
 import axios from 'axios';
 
 interface AuthValue {
   isLoading: boolean;
   currentUser: IUser | undefined;
   isAuthenticated: boolean;
-  login: UseMutationResult<
+  authenticate: UseMutationResult<
     any,
     unknown,
     {
+      type: 'login' | 'register';
       username: string;
       password: string;
     },
@@ -35,15 +41,17 @@ export const AuthProvider: FC = ({children}) => {
     }
     return undefined;
   });
-  const login = useMutation(
+  const authenticate = useMutation(
     async function ({
+      type,
       username,
       password,
     }: {
+      type: 'login' | 'register';
       username: string;
       password: string;
     }) {
-      const res = await axios.post('http://192.168.0.101:5000/auth/login', {
+      const res = await axios.post(`http://192.168.0.101:5000/auth/${type}`, {
         username,
         password,
       });
@@ -61,7 +69,7 @@ export const AuthProvider: FC = ({children}) => {
     isLoading: currentUser.isLoading,
     currentUser: currentUser.data,
     isAuthenticated: currentUser.isFetched && !!currentUser.data,
-    login,
+    authenticate,
   };
 
   return (

@@ -8,19 +8,20 @@ import {
   View,
 } from 'react-native';
 import {useMutation} from 'react-query';
+import {useAuth} from '../contexts/AuthContext';
 
 export default function Signup() {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const login = useMutation(async function () {
-    const res = await axios.post('http://192.168.0.101:5000/auth/login', {
+  const {authenticate} = useAuth();
+
+  function handleSubmit() {
+    authenticate.mutateAsync({
+      type: 'register',
       username,
       password,
     });
-    return res.data;
-  });
-
-  function handleSubmit() {}
+  }
 
   return (
     <SafeAreaView>
@@ -37,7 +38,7 @@ export default function Signup() {
           }}>
           ThatsApp
         </Text>
-        <Text>Login to get started</Text>
+        <Text>Signup to get started</Text>
       </View>
       <View
         style={{
@@ -60,6 +61,7 @@ export default function Signup() {
           value={password}
           onChangeText={setPassword}
           placeholder="Password"
+          secureTextEntry={true}
           style={{
             borderWidth: 1,
             padding: 10,
@@ -81,7 +83,7 @@ export default function Signup() {
               color: '#fff',
               fontWeight: 'bold',
             }}>
-            Login
+            Signup
           </Text>
         </TouchableOpacity>
       </View>
