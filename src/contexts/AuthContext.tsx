@@ -51,10 +51,12 @@ export const AuthProvider: FC = ({children}) => {
       username: string;
       password: string;
     }) {
-      const res = await axios.post(`http://192.168.0.101:5000/auth/${type}`, {
+      const res = await axios.post(`http://127.0.0.1:5000/auth/${type}`, {
         username,
         password,
       });
+      console.log('OK');
+
       return res.data;
     },
     {

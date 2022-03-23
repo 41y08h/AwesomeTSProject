@@ -12,8 +12,8 @@ import AsyncStorage from '@react-native-community/async-storage';
 import {useAuth} from '../contexts/AuthContext';
 
 export default function Login({navigation}) {
-  const [username, setUsername] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
+  const [username, setUsername] = useState<string>('wakanda');
+  const [password, setPassword] = useState<string>('password');
   const {authenticate} = useAuth();
 
   async function handleSubmit() {
