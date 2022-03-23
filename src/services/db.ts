@@ -8,7 +8,7 @@ import IContact from '../interfaces/contact';
 enablePromise(true);
 
 export const getDBConnection = async () => {
-  return openDatabase({name: 'todo-data.db', location: 'default'});
+  return openDatabase({name: 'todo-data2.db', location: 'default'});
 };
 
 export const createTables = async (db: SQLiteDatabase) => {
@@ -30,4 +30,9 @@ export const insertContact = async (db: SQLiteDatabase, contact: IContact) => {
     [name, username],
   );
   return t[0].insertId;
+};
+
+export const getContacts = async (db: SQLiteDatabase): Promise<IContact[]> => {
+  const result = await db.executeSql('SELECT * FROM Contact');
+  return result[0].rows.raw();
 };

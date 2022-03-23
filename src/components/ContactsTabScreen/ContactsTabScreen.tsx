@@ -1,9 +1,15 @@
 import React, {useCallback, useMemo, useRef, useState} from 'react';
 import {StyleSheet, Text, TextInput, View} from 'react-native';
-import {Button} from 'react-native-paper';
-import {getDBConnection, insertContact} from '../../services/db';
+import {FlatList} from 'react-native-gesture-handler';
+import {Button, List} from 'react-native-paper';
+import {useQuery, useQueryClient} from 'react-query';
+import {getContacts, getDBConnection, insertContact} from '../../services/db';
 
 export default function ContactsTabScreen() {
+  const contacts = useQuery('contacts', () =>
+    getDBConnection().then(getContacts),
+  );
+  const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
 
@@ -15,6 +21,31 @@ export default function ContactsTabScreen() {
     });
 
     console.log('Inserted contact with id:', id);
+    queryClient.invalidateQueries('contacts');
+  }
+
+  function renderContacts() {
+    if (contacts.isLoading) {
+      return <Text>Loading...</Text>;
+    }
+
+    if (contacts.isError) {
+      return <Text>Error: (</Text>;
+    }
+
+    return (
+      <FlatList
+        data={contacts.data}
+        renderItem={({item}) => (
+          <List.Item
+            title={item.name}
+            description={item.username}
+            onPress={() => {}}
+            left={props => <List.Icon {...props} icon="account" />}
+          />
+        )}
+      />
+    );
   }
 
   return (
@@ -35,6 +66,7 @@ export default function ContactsTabScreen() {
         onChangeText={setUsername}
       />
       <Button onPress={onAddContactPressed}>Add Contact</Button>
+      {renderContacts()}
     </View>
   );
 }
