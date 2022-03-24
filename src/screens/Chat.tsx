@@ -44,30 +44,33 @@ export default function Chat({route, navigation}) {
         />
         <Appbar.Content title={name} titleStyle={{color: 'white'}} />
       </Appbar.Header>
-      <TextInput
-        placeholder="Type a message..."
-        style={{
-          width: '100%',
-          backgroundColor: '#fff',
-          borderRadius: 10,
-          padding: 10,
-          paddingVertical: 0,
-          margin: 10,
-        }}
-        value={text}
-        onChangeText={setText}
-      />
-      <IconButton
-        icon="send"
-        color="#25D366"
-        size={30}
-        onPress={onSendPressed}
-        style={{
-          position: 'absolute',
-          right: 10,
-          bottom: 10,
-        }}
-      />
+      <View>
+        <TextInput
+          placeholder="Type a message..."
+          style={{
+            width: '100%',
+            backgroundColor: '#fff',
+            borderRadius: 10,
+            padding: 10,
+            paddingVertical: 0,
+            margin: 10,
+          }}
+          value={text}
+          onChangeText={setText}
+        />
+        <IconButton
+          icon="send"
+          color="#25D366"
+          size={30}
+          onPress={onSendPressed}
+          style={{
+            position: 'absolute',
+            right: 10,
+            bottom: 10,
+          }}
+        />
+      </View>
+
       <FlatList
         data={messages.data}
         renderItem={({item}) => (

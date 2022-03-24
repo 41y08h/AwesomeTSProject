@@ -17,7 +17,7 @@ import {getDBConnection, insertMessage} from '../services/db';
 import {useQueryClient} from 'react-query';
 
 export default function Home() {
-  const {token} = useAuth();
+  const {token, currentUser} = useAuth();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function Home() {
     <>
       <Appbar.Header style={{backgroundColor: '#25D366'}}>
         <Appbar.Content
-          title="ThatsApp"
+          title={'ThatsApp ' + currentUser?.username}
           titleStyle={{
             color: '#fff',
           }}

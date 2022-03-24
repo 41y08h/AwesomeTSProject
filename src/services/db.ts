@@ -9,7 +9,7 @@ import {IMessage} from '../interfaces/message';
 enablePromise(true);
 
 export const getDBConnection = async () => {
-  return openDatabase({name: 'todo-data3.db', location: 'default'});
+  return openDatabase({name: 'todo-data4.db', location: 'default'});
 };
 
 export const createTables = async (db: SQLiteDatabase) => {
@@ -67,6 +67,29 @@ export const getMessages = async (
   const result = await db.executeSql(
     `SELECT * FROM Message WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)`,
     [currentUsername, recipient, recipient, currentUsername],
+  );
+  return result[0].rows.raw();
+};
+
+export const getRecipients = async (
+  db: SQLiteDatabase,
+  currentUsername: string,
+) => {
+  const result = await db.executeSql(
+    `
+    SELECT coalesce(name, second_person) as name, second_person as username
+    from (
+      select Contact.name,
+      case Message.sender
+        when ? then receiver
+        ELSE Message.sender
+      END second_person
+      FROM Message
+      LEFT join Contact on Contact.username = second_person
+    )
+    GROUP by name
+    `,
+    [currentUsername],
   );
   return result[0].rows.raw();
 };
