@@ -1,6 +1,7 @@
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import React, {useEffect} from 'react';
 import {useAuth} from './contexts/AuthContext';
+import Chat from './screens/Chat';
 import Home from './screens/Home';
 import Login from './screens/Login';
 import Signup from './screens/Signup';
@@ -23,6 +24,7 @@ export default function App() {
       {isAuthenticated ? (
         <>
           <Stack.Screen name="Home" component={Home} />
+          <Stack.Screen name="Chat" component={Chat} />
         </>
       ) : (
         <>

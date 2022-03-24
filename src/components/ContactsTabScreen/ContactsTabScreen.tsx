@@ -1,3 +1,4 @@
+import {useNavigation} from '@react-navigation/native';
 import React, {useCallback, useMemo, useRef, useState} from 'react';
 import {StyleSheet, Text, TextInput, View} from 'react-native';
 import {FlatList} from 'react-native-gesture-handler';
@@ -6,6 +7,7 @@ import {useQuery, useQueryClient} from 'react-query';
 import {getContacts, getDBConnection, insertContact} from '../../services/db';
 
 export default function ContactsTabScreen() {
+  const navigation = useNavigation();
   const contacts = useQuery('contacts', () =>
     getDBConnection().then(getContacts),
   );
@@ -40,7 +42,12 @@ export default function ContactsTabScreen() {
           <List.Item
             title={item.name}
             description={item.username}
-            onPress={() => {}}
+            onPress={() => {
+              navigation.navigate('Chat', {
+                username: item.username,
+                name: item.name,
+              });
+            }}
             left={props => <List.Icon {...props} icon="account" />}
           />
         )}

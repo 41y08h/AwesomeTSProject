@@ -14,6 +14,7 @@ import axios from 'axios';
 
 interface AuthValue {
   isLoading: boolean;
+  token: string | undefined;
   currentUser: IUser | undefined;
   isAuthenticated: boolean;
   authenticate: UseMutationResult<
@@ -33,11 +34,11 @@ export const useAuth = () => useContext<AuthValue>(AuthContext);
 
 export const AuthProvider: FC = ({children}) => {
   const queryClient = useQueryClient();
-  const currentUser = useQuery('currentUser', async () => {
+  const auth = useQuery('auth', async () => {
     const token = await AsyncStorage.getItem('token');
     if (token) {
       const user = jwtDecode<IUser>(token);
-      return user;
+      return {user, token};
     }
     return undefined;
   });
@@ -62,21 +63,25 @@ export const AuthProvider: FC = ({children}) => {
     {
       onSuccess: async data => {
         await AsyncStorage.setItem('token', data.token);
-        queryClient.setQueryData('currentUser', data.user);
+        queryClient.setQueryData('auth', {
+          token: data.token,
+          user: data.user,
+        });
       },
     },
   );
 
   const value = {
-    isLoading: currentUser.isLoading,
-    currentUser: currentUser.data,
-    isAuthenticated: currentUser.isFetched && !!currentUser.data,
+    isLoading: auth.isLoading,
+    token: auth.data?.token,
+    currentUser: auth.data?.user,
+    isAuthenticated: auth.isFetched && auth.data?.user !== undefined,
     authenticate,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {currentUser.isLoading ? <Text>Loading...</Text> : children}
+      {auth.isLoading ? <Text>Loading...</Text> : children}
     </AuthContext.Provider>
   );
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {SafeAreaView, Text} from 'react-native';
 import {Appbar} from 'react-native-paper';
 import {useAuth} from '../contexts/AuthContext';
@@ -10,9 +10,34 @@ import {
 } from 'react-native-paper-tabs';
 import ChatTabScreen from '../components/ChatTabScreen';
 import ContactsTabScreen from '../components/ContactsTabScreen';
+import useEventSubscription from '../hooks/useEventSubscription';
+import {SocketConnection} from '../services/socket';
+import {IMessage} from '../interfaces/message';
+import {getDBConnection, insertMessage} from '../services/db';
+import {useQueryClient} from 'react-query';
 
 export default function Home() {
-  const {currentUser} = useAuth();
+  const {token} = useAuth();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    SocketConnection.initialize(token as string);
+  }, []);
+
+  useEventSubscription('connect', () => {
+    console.log('connected');
+  });
+
+  useEventSubscription('message', async (message: IMessage) => {
+    const {id, text, sender, receiver, created_at} = message;
+
+    const db = await getDBConnection();
+    await insertMessage(db, {id, text, sender, receiver, created_at});
+
+    queryClient.invalidateQueries(['messages', sender]);
+    console.log('message received', text);
+  });
+
   return (
     <>
       <Appbar.Header style={{backgroundColor: '#25D366'}}>
