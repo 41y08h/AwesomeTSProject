@@ -63,7 +63,7 @@ export const getMessages = async (
   db: SQLiteDatabase,
   currentUsername: string,
   recipient: string,
-) => {
+): Promise<IMessage[]> => {
   const result = await db.executeSql(
     `SELECT * FROM Message WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)`,
     [currentUsername, recipient, recipient, currentUsername],

@@ -1,14 +1,17 @@
-import React, {useState} from 'react';
+import React, {createRef, useEffect, useRef, useState} from 'react';
 import {View} from 'react-native';
 import {FlatList, ScrollView} from 'react-native-gesture-handler';
 import {Appbar, IconButton, Text, TextInput} from 'react-native-paper';
-import {useQuery} from 'react-query';
+import {useQuery, useQueryClient} from 'react-query';
 import {useAuth} from '../contexts/AuthContext';
+import {IMessage} from '../interfaces/message';
 import {getDBConnection, getMessages, insertMessage} from '../services/db';
 import {SocketConnection} from '../services/socket';
+import {format} from 'date-fns';
 
 export default function Chat({route, navigation}) {
   const {name, username} = route.params;
+  const queryClient = useQueryClient();
   const [text, setText] = useState('');
   const {currentUser} = useAuth();
   const messages = useQuery(['messages', username], () =>
@@ -16,6 +19,13 @@ export default function Chat({route, navigation}) {
       getMessages(db, currentUser?.username as string, username),
     ),
   );
+  const flatListRef = createRef<FlatList>();
+
+  useEffect(() => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToEnd();
+    }
+  }, [messages.data?.length, flatListRef.current]);
 
   async function onSendPressed() {
     const socket = SocketConnection.getInstance();
@@ -31,6 +41,9 @@ export default function Chat({route, navigation}) {
       text,
       sendTo: username,
     });
+
+    setText('');
+    queryClient.invalidateQueries(['messages', username]);
   }
 
   return (
@@ -52,24 +65,44 @@ export default function Chat({route, navigation}) {
           flex: 1,
         }}>
         <FlatList
+          ref={flatListRef}
           style={{
             flex: 1,
           }}
           data={messages.data}
-          renderItem={({item}) => (
-            <Text
+          renderItem={({item}: {item: IMessage}) => (
+            <View
               style={{
                 backgroundColor:
                   item.sender === currentUser?.username ? '#25D366' : '#fff',
-                color: item.sender === currentUser?.username ? '#fff' : '#000',
                 padding: 10,
                 margin: 10,
                 borderRadius: 10,
+                alignSelf:
+                  item.sender === currentUser?.username
+                    ? 'flex-end'
+                    : 'flex-start',
               }}>
-              {item.text}
-            </Text>
+              <Text
+                style={{
+                  color:
+                    item.sender === currentUser?.username ? '#fff' : '#000',
+                }}>
+                {item.text}
+              </Text>
+              <Text
+                style={{
+                  color:
+                    item.sender === currentUser?.username ? '#fff' : '#000',
+                }}>
+                {format(
+                  new Date(item.created_at as string),
+                  'hh:mm a',
+                ).toString()}
+              </Text>
+            </View>
           )}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.id?.toString() as string}
         />
         <View
           style={{
