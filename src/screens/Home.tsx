@@ -13,7 +13,11 @@ import ContactsTabScreen from '../components/ContactsTabScreen';
 import useEventSubscription from '../hooks/useEventSubscription';
 import {SocketConnection} from '../services/socket';
 import {IMessage} from '../interfaces/message';
-import {getDBConnection, insertMessage} from '../services/db';
+import {
+  getDBConnection,
+  insertMessage,
+  updateMessageDeliveryTime,
+} from '../services/db';
 import {useQueryClient} from 'react-query';
 
 export default function Home() {
@@ -36,6 +40,14 @@ export default function Home() {
 
     queryClient.invalidateQueries(['messages', sender]);
     console.log('message received', text);
+    const socket = SocketConnection.getInstance();
+
+    socket?.emit('delivery-receipt', {receiptFor: sender, messageId: id});
+  });
+
+  useEventSubscription('delivery-receipt', async ({receiptFrom, messageId}) => {
+    await updateMessageDeliveryTime(messageId, receiptFrom);
+    queryClient.invalidateQueries(['messages', receiptFrom]);
   });
 
   return (

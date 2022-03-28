@@ -23,9 +23,11 @@ export default function Chat({route, navigation}) {
 
   useEffect(() => {
     if (flatListRef.current) {
-      flatListRef.current.scrollToEnd();
+      flatListRef.current.scrollToEnd({
+        animated: false,
+      });
     }
-  }, [messages.data?.length, flatListRef.current]);
+  }, [messages.data?.length, flatListRef.current, messages.isFetching]);
 
   async function onSendPressed() {
     const socket = SocketConnection.getInstance();
@@ -45,6 +47,8 @@ export default function Chat({route, navigation}) {
     setText('');
     queryClient.invalidateQueries(['messages', username]);
   }
+
+  if (messages.isLoading) return <View />;
 
   return (
     <View
@@ -100,6 +104,9 @@ export default function Chat({route, navigation}) {
                   'hh:mm a',
                 ).toString()}
               </Text>
+              {item.sender === currentUser?.username && (
+                <Text>{item.delivered_at ? '✔✔' : '✔'}</Text>
+              )}
             </View>
           )}
           keyExtractor={item => item.id?.toString() as string}

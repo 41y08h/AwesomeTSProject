@@ -93,3 +93,14 @@ export const getRecipients = async (
   );
   return result[0].rows.raw();
 };
+
+export const updateMessageDeliveryTime = async (
+  id: number,
+  recipient: string,
+) => {
+  const db = await getDBConnection();
+  await db.executeSql(
+    `UPDATE Message SET delivered_at = CURRENT_TIMESTAMP WHERE id = ? AND receiver = ? AND delivered_at IS NULL`,
+    [id, recipient],
+  );
+};
