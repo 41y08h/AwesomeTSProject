@@ -17,6 +17,7 @@ import {
   getDBConnection,
   insertMessage,
   updateMessageDeliveryTime,
+  updateMessageReadTime,
 } from '../services/db';
 import {useQueryClient} from 'react-query';
 
@@ -49,6 +50,14 @@ export default function Home() {
     await updateMessageDeliveryTime(messageId, receiptFrom);
     queryClient.invalidateQueries(['messages', receiptFrom]);
   });
+
+  useEventSubscription(
+    'read-receipt',
+    async ({receiptFrom}: {receiptFrom: string}) => {
+      await updateMessageReadTime(receiptFrom);
+      queryClient.invalidateQueries(['messages', receiptFrom]);
+    },
+  );
 
   return (
     <>

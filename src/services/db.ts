@@ -104,3 +104,12 @@ export const updateMessageDeliveryTime = async (
     [id, recipient],
   );
 };
+
+export const updateMessageReadTime = async (recipient: string) => {
+  // Set the read_at timestamp of all the messages from the recipient
+  const db = await getDBConnection();
+  await db.executeSql(
+    `UPDATE Message SET read_at = CURRENT_TIMESTAMP WHERE receiver = ? AND read_at IS NULL`,
+    [recipient],
+  );
+};

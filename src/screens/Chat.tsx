@@ -10,13 +10,13 @@ import {SocketConnection} from '../services/socket';
 import {format} from 'date-fns';
 
 export default function Chat({route, navigation}) {
-  const {name, username} = route.params;
+  const {name, username: recipient} = route.params;
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
   const {currentUser} = useAuth();
-  const messages = useQuery(['messages', username], () =>
+  const messages = useQuery(['messages', recipient], () =>
     getDBConnection().then(db =>
-      getMessages(db, currentUser?.username as string, username),
+      getMessages(db, currentUser?.username as string, recipient),
     ),
   );
   const flatListRef = createRef<FlatList>();
@@ -29,23 +29,30 @@ export default function Chat({route, navigation}) {
     }
   }, [messages.data?.length, flatListRef.current, messages.isFetching]);
 
+  useEffect(() => {
+    console.log('changed');
+    // Send read receipt
+    const socket = SocketConnection.getInstance();
+    socket?.emit('read-receipt', {receiptFor: recipient});
+  }, [messages.data?.length]);
+
   async function onSendPressed() {
     const socket = SocketConnection.getInstance();
     const db = await getDBConnection();
     const id = await insertMessage(db, {
       text,
       sender: currentUser?.username as string,
-      receiver: username,
+      receiver: recipient,
     });
 
     socket?.emit('send-message', {
       id,
       text,
-      sendTo: username,
+      sendTo: recipient,
     });
 
     setText('');
-    queryClient.invalidateQueries(['messages', username]);
+    queryClient.invalidateQueries(['messages', recipient]);
   }
 
   if (messages.isLoading) return <View />;
@@ -99,13 +106,15 @@ export default function Chat({route, navigation}) {
                   color:
                     item.sender === currentUser?.username ? '#fff' : '#000',
                 }}>
-                {format(
-                  new Date(item.created_at as string),
-                  'hh:mm a',
-                ).toString()}
+                {format(new Date(item.read_at as string), 'hh:mm a').toString()}
               </Text>
               {item.sender === currentUser?.username && (
-                <Text>{item.delivered_at ? '✔✔' : '✔'}</Text>
+                <Text
+                  style={{
+                    color: item.read_at ? '#fff' : '#000',
+                  }}>
+                  {item.delivered_at ? '✔✔' : '✔'}
+                </Text>
               )}
             </View>
           )}
