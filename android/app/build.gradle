@@ -128,12 +128,12 @@ def nativeArchitectures = project.getProperties().get("reactNativeDebugArchitect
 android {
     ndkVersion rootProject.ext.ndkVersion
 
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdkVersion 29
 
     defaultConfig {
         applicationId "com.awesometsproject"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion 21
+        targetSdkVersion 29
         versionCode 1
         versionName "1.0"
     }
@@ -189,6 +189,8 @@ android {
 }
 
 dependencies {
+    implementation project(':react-native-fs')
+
     implementation fileTree(dir: "libs", include: ["*.jar"])
     //noinspection GradleDynamicVersion
     implementation "com.facebook.react:react-native:+"  // From node_modules

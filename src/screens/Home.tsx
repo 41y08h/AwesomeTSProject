@@ -34,7 +34,7 @@ export default function Home() {
   });
 
   useEventSubscription('message', async (message: IMessage) => {
-    const {id, text, sender, receiver, created_at} = message;
+    const {id, text, image_url, sender, receiver, created_at} = message;
 
     const db = await getDBConnection();
     await insertMessage(db, {id, text, sender, receiver, created_at});

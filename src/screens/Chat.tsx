@@ -1,5 +1,5 @@
 import React, {createRef, useEffect, useRef, useState} from 'react';
-import {View} from 'react-native';
+import {PermissionsAndroid, View} from 'react-native';
 import {FlatList, ScrollView} from 'react-native-gesture-handler';
 import {Appbar, IconButton, Text, TextInput} from 'react-native-paper';
 import {useQuery, useQueryClient} from 'react-query';
@@ -8,6 +8,9 @@ import {IMessage} from '../interfaces/message';
 import {getDBConnection, getMessages, insertMessage} from '../services/db';
 import {SocketConnection} from '../services/socket';
 import {format} from 'date-fns';
+import {launchImageLibrary} from 'react-native-image-picker';
+import RNFetchBlob from 'rn-fetch-blob';
+import RNFS from 'react-native-fs';
 
 export default function Chat({route, navigation}) {
   const {name, username: recipient} = route.params;
@@ -53,6 +56,40 @@ export default function Chat({route, navigation}) {
 
     setText('');
     queryClient.invalidateQueries(['messages', recipient]);
+  }
+
+  async function onImageSelectPressed() {
+    const response = await launchImageLibrary({
+      mediaType: 'photo',
+      includeBase64: true,
+    });
+    if (response.didCancel) return;
+
+    // const image = response.assets && response.assets[0];
+    // const socket = SocketConnection.getInstance();
+    // socket?.emit('image', {
+    //   text,
+    //   sendTo: recipient,
+    //   image: {
+    //     base64: image?.base64,
+    //     filename: image?.fileName,
+    //     type: image?.type,
+    //   },
+    // });
+
+    const granted = await PermissionsAndroid.requestMultiple([
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+      'android.permission.READ_EXTERNAL_STORAGE',
+    ]);
+    if (
+      granted['android.permission.READ_EXTERNAL_STORAGE'] != 'granted' ||
+      granted['android.permission.WRITE_EXTERNAL_STORAGE'] != 'granted'
+    )
+      return;
+
+    const path = '/storage/emulated/0/test.txt';
+
+    await RNFS.writeFile(path, 'Hello World!', 'utf8');
   }
 
   if (messages.isLoading) return <View />;
@@ -124,17 +161,24 @@ export default function Chat({route, navigation}) {
           style={{
             height: 'auto',
             width: '100%',
-            position: 'relative',
             borderWidth: 1,
             borderTopColor: '#25D366',
             borderRightWidth: 0,
             borderLeftWidth: 0,
             borderBottomWidth: 0,
+            justifyContent: 'space-between',
+            flexDirection: 'row',
           }}>
+          <IconButton
+            icon="image"
+            color="#25D366"
+            size={30}
+            onPress={onImageSelectPressed}
+          />
           <TextInput
             placeholder="Type a message..."
             style={{
-              width: '100%',
+              flexGrow: 1,
               backgroundColor: '#fff',
               borderRadius: 10,
               paddingVertical: 0,
@@ -147,11 +191,6 @@ export default function Chat({route, navigation}) {
             color="#25D366"
             size={30}
             onPress={onSendPressed}
-            style={{
-              position: 'absolute',
-              right: 0,
-              bottom: 0,
-            }}
           />
         </View>
       </View>

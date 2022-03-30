@@ -9,7 +9,7 @@ import {IMessage} from '../interfaces/message';
 enablePromise(true);
 
 export const getDBConnection = async () => {
-  return openDatabase({name: 'todo-data4.db', location: 'default'});
+  return openDatabase({name: 'todo-data6.db', location: 'default'});
 };
 
 export const createTables = async (db: SQLiteDatabase) => {
@@ -23,10 +23,22 @@ export const createTables = async (db: SQLiteDatabase) => {
   );
   `);
   // Messages
+  /**
+   * Text
+   *
+   * Media
+   *  Image & Videos (text as caption)
+   *  Document
+   *  Sticker
+   *
+   * Contact
+   */
   await db.executeSql(`
   CREATE TABLE IF NOT EXISTS Message (
     id INTEGER PRIMARY KEY AUTOINCREMENT, 
     text TEXT not null, 
+    image_url TEXT,
+    local_image_url TEXT,
     sender TEXT not null, 
     receiver TEXT not null,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
