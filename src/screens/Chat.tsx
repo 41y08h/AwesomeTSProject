@@ -65,18 +65,6 @@ export default function Chat({route, navigation}) {
     });
     if (response.didCancel) return;
 
-    // const image = response.assets && response.assets[0];
-    // const socket = SocketConnection.getInstance();
-    // socket?.emit('image', {
-    //   text,
-    //   sendTo: recipient,
-    //   image: {
-    //     base64: image?.base64,
-    //     filename: image?.fileName,
-    //     type: image?.type,
-    //   },
-    // });
-
     const granted = await PermissionsAndroid.requestMultiple([
       'android.permission.WRITE_EXTERNAL_STORAGE',
       'android.permission.READ_EXTERNAL_STORAGE',
@@ -87,9 +75,46 @@ export default function Chat({route, navigation}) {
     )
       return;
 
-    const path = '/storage/emulated/0/test.txt';
+    // Save image to device
+    const image = response.assets && response.assets[0];
+    if (!image) return;
 
-    await RNFS.writeFile(path, 'Hello World!', 'utf8');
+    // Create the directory if it doesn't exist - 'ThatsApp Images' in the external storage
+    const dir = `${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images`;
+    await RNFS.mkdir(dir);
+
+    const extension = image.fileName?.split('.')[1];
+    const filename = format(new Date(), 'yyyyMMdd_HHmmss') + extension;
+
+    await RNFS.writeFile(
+      `${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images/IMG_${filename}`,
+      image.base64 as string,
+      'base64',
+    );
+
+    // Insert in database
+    const db = await getDBConnection();
+    const id = await insertMessage(db, {
+      text,
+      sender: currentUser?.username as string,
+      receiver: recipient,
+      local_image_url: filename,
+    });
+
+    const socket = SocketConnection.getInstance();
+    socket?.emit('send-message', {
+      id,
+      text,
+      sendTo: recipient,
+      image: {
+        base64: image.base64,
+        filename: image.fileName,
+        type: image.type,
+      },
+    });
+
+    setText('');
+    queryClient.invalidateQueries(['messages', recipient]);
   }
 
   if (messages.isLoading) return <View />;

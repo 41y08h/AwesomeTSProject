@@ -63,10 +63,10 @@ export const getContacts = async (db: SQLiteDatabase): Promise<IContact[]> => {
 };
 
 export const insertMessage = async (db: SQLiteDatabase, message: IMessage) => {
-  const {text, sender, receiver} = message;
+  const {text, sender, receiver, local_image_url} = message;
   const t = await db.executeSql(
-    `INSERT INTO Message (text, sender, receiver) VALUES (?, ?, ?)`,
-    [text, sender, receiver],
+    `INSERT INTO Message (text, sender, receiver, local_image_url) VALUES (?, ?, ?, ?)`,
+    [text, sender, receiver, local_image_url],
   );
   return t[0].insertId;
 };
