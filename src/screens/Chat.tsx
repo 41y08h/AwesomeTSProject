@@ -1,16 +1,21 @@
 import React, {createRef, useEffect, useRef, useState} from 'react';
-import {PermissionsAndroid, View} from 'react-native';
+import {Image, PermissionsAndroid, View} from 'react-native';
 import {FlatList, ScrollView} from 'react-native-gesture-handler';
-import {Appbar, IconButton, Text, TextInput} from 'react-native-paper';
+import {Appbar, Button, IconButton, Text, TextInput} from 'react-native-paper';
 import {useQuery, useQueryClient} from 'react-query';
 import {useAuth} from '../contexts/AuthContext';
 import {IMessage} from '../interfaces/message';
-import {getDBConnection, getMessages, insertMessage} from '../services/db';
+import {
+  getDBConnection,
+  getMessages,
+  insertMessage,
+  updateMessageLocalImageUrl,
+} from '../services/db';
 import {SocketConnection} from '../services/socket';
 import {format} from 'date-fns';
 import {launchImageLibrary} from 'react-native-image-picker';
-import RNFetchBlob from 'rn-fetch-blob';
 import RNFS from 'react-native-fs';
+import AutoHeightImage from 'react-native-auto-height-image';
 
 export default function Chat({route, navigation}) {
   const {name, username: recipient} = route.params;
@@ -84,10 +89,13 @@ export default function Chat({route, navigation}) {
     await RNFS.mkdir(dir);
 
     const extension = image.fileName?.split('.')[1];
-    const filename = format(new Date(), 'yyyyMMdd_HHmmss') + extension;
+    const filename = `IMG_${format(
+      new Date(),
+      'yyyyMMdd_HHmmss',
+    )}.${extension}`;
 
     await RNFS.writeFile(
-      `${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images/IMG_${filename}`,
+      `${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images/${filename}`,
       image.base64 as string,
       'base64',
     );
@@ -99,6 +107,7 @@ export default function Chat({route, navigation}) {
       sender: currentUser?.username as string,
       receiver: recipient,
       local_image_url: filename,
+      image_size: image.base64?.length,
     });
 
     const socket = SocketConnection.getInstance();
@@ -143,43 +152,78 @@ export default function Chat({route, navigation}) {
             flex: 1,
           }}
           data={messages.data}
-          renderItem={({item}: {item: IMessage}) => (
-            <View
-              style={{
-                backgroundColor:
-                  item.sender === currentUser?.username ? '#25D366' : '#fff',
-                padding: 10,
-                margin: 10,
-                borderRadius: 10,
-                alignSelf:
-                  item.sender === currentUser?.username
-                    ? 'flex-end'
-                    : 'flex-start',
-              }}>
-              <Text
+          renderItem={({item}: {item: IMessage}) => {
+            const isImage = Boolean(item.local_image_url || item.image_url);
+            return (
+              <View
                 style={{
-                  color:
-                    item.sender === currentUser?.username ? '#fff' : '#000',
+                  backgroundColor:
+                    item.sender === currentUser?.username ? '#25D366' : '#fff',
+                  padding: 10,
+                  margin: 10,
+                  borderRadius: 10,
+                  alignSelf:
+                    item.sender === currentUser?.username
+                      ? 'flex-end'
+                      : 'flex-start',
                 }}>
-                {item.text}
-              </Text>
-              <Text
-                style={{
-                  color:
-                    item.sender === currentUser?.username ? '#fff' : '#000',
-                }}>
-                {format(new Date(item.read_at as string), 'hh:mm a').toString()}
-              </Text>
-              {item.sender === currentUser?.username && (
+                {isImage &&
+                  (item.local_image_url ? (
+                    <AutoHeightImage
+                      source={{
+                        uri: `file://${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images/${item.local_image_url}`,
+                      }}
+                      width={200}
+                    />
+                  ) : (
+                    <Button
+                      onPress={async () => {
+                        const {promise} = RNFS.downloadFile({
+                          fromUrl: `http://10.0.2.2:5000/localstore/${item.image_url}`,
+                          toFile: `${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images/${item.image_url}`,
+                        });
+                        await promise;
+
+                        await updateMessageLocalImageUrl(
+                          item.id as number,
+                          item.image_url as string,
+                        );
+
+                        queryClient.invalidateQueries(['messages', recipient]);
+                      }}>
+                      download {Math.floor((item.image_size as number) / 1000)}{' '}
+                      KB
+                    </Button>
+                  ))}
+
                 <Text
                   style={{
-                    color: item.read_at ? '#fff' : '#000',
+                    color:
+                      item.sender === currentUser?.username ? '#fff' : '#000',
                   }}>
-                  {item.delivered_at ? '✔✔' : '✔'}
+                  {item.text}
                 </Text>
-              )}
-            </View>
-          )}
+                <Text
+                  style={{
+                    color:
+                      item.sender === currentUser?.username ? '#fff' : '#000',
+                  }}>
+                  {format(
+                    new Date(item.read_at as string),
+                    'hh:mm a',
+                  ).toString()}
+                </Text>
+                {item.sender === currentUser?.username && (
+                  <Text
+                    style={{
+                      color: item.read_at ? '#fff' : '#000',
+                    }}>
+                    {item.delivered_at ? '✔✔' : '✔'}
+                  </Text>
+                )}
+              </View>
+            );
+          }}
           keyExtractor={item => item.id?.toString() as string}
         />
         <View

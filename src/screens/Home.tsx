@@ -34,12 +34,19 @@ export default function Home() {
   });
 
   useEventSubscription('message', async (message: IMessage) => {
-    const {id, text, image_url, sender, receiver, created_at} = message;
-
-    if (image_url) return console.log('image received');
+    const {id, text, image_url, sender, receiver, created_at, image_size} =
+      message;
 
     const db = await getDBConnection();
-    await insertMessage(db, {id, text, sender, receiver, created_at});
+    await insertMessage(db, {
+      id,
+      text,
+      sender,
+      receiver,
+      created_at,
+      image_url,
+      image_size,
+    });
 
     queryClient.invalidateQueries(['messages', sender]);
     console.log('message received', text);

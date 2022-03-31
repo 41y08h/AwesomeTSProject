@@ -9,7 +9,7 @@ import {IMessage} from '../interfaces/message';
 enablePromise(true);
 
 export const getDBConnection = async () => {
-  return openDatabase({name: 'todo-data6.db', location: 'default'});
+  return openDatabase({name: 'todo-data7.db', location: 'default'});
 };
 
 export const createTables = async (db: SQLiteDatabase) => {
@@ -39,6 +39,7 @@ export const createTables = async (db: SQLiteDatabase) => {
     text TEXT not null, 
     image_url TEXT,
     local_image_url TEXT,
+    image_size INTEGER,
     sender TEXT not null, 
     receiver TEXT not null,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -63,10 +64,11 @@ export const getContacts = async (db: SQLiteDatabase): Promise<IContact[]> => {
 };
 
 export const insertMessage = async (db: SQLiteDatabase, message: IMessage) => {
-  const {text, sender, receiver, local_image_url} = message;
+  const {text, sender, receiver, local_image_url, image_url, image_size} =
+    message;
   const t = await db.executeSql(
-    `INSERT INTO Message (text, sender, receiver, local_image_url) VALUES (?, ?, ?, ?)`,
-    [text, sender, receiver, local_image_url],
+    `INSERT INTO Message (text, sender, receiver, local_image_url, image_url, image_size) VALUES (?, ?, ?, ?, ?, ?)`,
+    [text, sender, receiver, local_image_url, image_url, image_size],
   );
   return t[0].insertId;
 };
@@ -124,4 +126,12 @@ export const updateMessageReadTime = async (recipient: string) => {
     `UPDATE Message SET read_at = CURRENT_TIMESTAMP WHERE receiver = ? AND read_at IS NULL`,
     [recipient],
   );
+};
+
+export const updateMessageLocalImageUrl = async (id: number, url: string) => {
+  const db = await getDBConnection();
+  await db.executeSql(`UPDATE Message SET local_image_url = ? WHERE id = ?`, [
+    url,
+    id,
+  ]);
 };
