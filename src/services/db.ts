@@ -9,7 +9,7 @@ import {IMessage} from '../interfaces/message';
 enablePromise(true);
 
 export const getDBConnection = async () => {
-  return openDatabase({name: 'todo-data7.db', location: 'default'});
+  return openDatabase({name: 'todo-data10.db', location: 'default'});
 };
 
 export const createTables = async (db: SQLiteDatabase) => {
@@ -37,9 +37,11 @@ export const createTables = async (db: SQLiteDatabase) => {
   CREATE TABLE IF NOT EXISTS Message (
     id INTEGER PRIMARY KEY AUTOINCREMENT, 
     text TEXT not null, 
-    image_url TEXT,
-    local_image_url TEXT,
-    image_size INTEGER,
+    message_type INTEGER not null,
+    media_type TEXT,
+    remote_media_url TEXT,
+    local_media_filename TEXT,
+    media_size INTEGER,
     sender TEXT not null, 
     receiver TEXT not null,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -64,11 +66,28 @@ export const getContacts = async (db: SQLiteDatabase): Promise<IContact[]> => {
 };
 
 export const insertMessage = async (db: SQLiteDatabase, message: IMessage) => {
-  const {text, sender, receiver, local_image_url, image_url, image_size} =
-    message;
+  const {
+    text,
+    sender,
+    receiver,
+    message_type,
+    media_type,
+    remote_media_url,
+    local_media_filename,
+    media_size,
+  } = message;
   const t = await db.executeSql(
-    `INSERT INTO Message (text, sender, receiver, local_image_url, image_url, image_size) VALUES (?, ?, ?, ?, ?, ?)`,
-    [text, sender, receiver, local_image_url, image_url, image_size],
+    `INSERT INTO Message (text, sender, receiver, message_type, media_type, remote_media_url, local_media_filename, media_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      text,
+      sender,
+      receiver,
+      message_type,
+      media_type,
+      remote_media_url,
+      local_media_filename,
+      media_size,
+    ],
   );
   return t[0].insertId;
 };
@@ -128,10 +147,13 @@ export const updateMessageReadTime = async (recipient: string) => {
   );
 };
 
-export const updateMessageLocalImageUrl = async (id: number, url: string) => {
+export const updateMessageLocalImageFilename = async (
+  id: number,
+  url: string,
+) => {
   const db = await getDBConnection();
-  await db.executeSql(`UPDATE Message SET local_image_url = ? WHERE id = ?`, [
-    url,
-    id,
-  ]);
+  await db.executeSql(
+    `UPDATE Message SET local_media_filename = ? WHERE id = ?`,
+    [url, id],
+  );
 };

@@ -4,12 +4,12 @@ import {FlatList, ScrollView} from 'react-native-gesture-handler';
 import {Appbar, Button, IconButton, Text, TextInput} from 'react-native-paper';
 import {useQuery, useQueryClient} from 'react-query';
 import {useAuth} from '../contexts/AuthContext';
-import {IMessage} from '../interfaces/message';
+import {IMessage, IMessageType} from '../interfaces/message';
 import {
   getDBConnection,
   getMessages,
   insertMessage,
-  updateMessageLocalImageUrl,
+  updateMessageLocalImageFilename,
 } from '../services/db';
 import {SocketConnection} from '../services/socket';
 import {format} from 'date-fns';
@@ -48,6 +48,7 @@ export default function Chat({route, navigation}) {
     const socket = SocketConnection.getInstance();
     const db = await getDBConnection();
     const id = await insertMessage(db, {
+      message_type: IMessageType.TEXT,
       text,
       sender: currentUser?.username as string,
       receiver: recipient,
@@ -63,10 +64,11 @@ export default function Chat({route, navigation}) {
     queryClient.invalidateQueries(['messages', recipient]);
   }
 
-  async function onImageSelectPressed() {
+  async function onGallerySelectPressed() {
     const response = await launchImageLibrary({
-      mediaType: 'photo',
+      mediaType: 'mixed',
       includeBase64: true,
+      selectionLimit: 1,
     });
     if (response.didCancel) return;
 
@@ -80,23 +82,27 @@ export default function Chat({route, navigation}) {
     )
       return;
 
-    // Save image to device
-    const image = response.assets && response.assets[0];
-    if (!image) return;
+    // Save asset to device
+    const media = response.assets && response.assets[0];
+    if (!media) return;
 
-    // Create the directory if it doesn't exist - 'ThatsApp Images' in the external storage
-    const dir = `${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images`;
+    const isImage = media.type?.startsWith('image');
+
+    // Create the directory if it doesn't exist - 'ThatsApp Images' or 'ThatsApp Videos' in the external storage
+    const dir = `${RNFS.ExternalStorageDirectoryPath}/ThatsApp ${
+      isImage ? 'Images' : 'Videos'
+    }`;
     await RNFS.mkdir(dir);
 
-    const extension = image.fileName?.split('.')[1];
-    const filename = `IMG_${format(
+    const extension = media.fileName?.split('.')[1];
+    const filename = `${isImage ? 'IMG' : 'VID'}_${format(
       new Date(),
       'yyyyMMdd_HHmmss',
     )}.${extension}`;
 
     await RNFS.writeFile(
       `${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images/${filename}`,
-      image.base64 as string,
+      media.base64 as string,
       'base64',
     );
 
@@ -106,8 +112,9 @@ export default function Chat({route, navigation}) {
       text,
       sender: currentUser?.username as string,
       receiver: recipient,
-      local_image_url: filename,
-      image_size: image.base64?.length,
+      message_type: isImage ? IMessageType.IMAGE : IMessageType.VIDEO,
+      local_media_filename: filename,
+      media_size: media.base64?.length,
     });
 
     const socket = SocketConnection.getInstance();
@@ -115,10 +122,10 @@ export default function Chat({route, navigation}) {
       id,
       text,
       sendTo: recipient,
-      image: {
-        base64: image.base64,
-        filename: image.fileName,
-        type: image.type,
+      media: {
+        base64: media.base64,
+        filename: media.fileName,
+        type: media.type,
       },
     });
 
@@ -153,7 +160,9 @@ export default function Chat({route, navigation}) {
           }}
           data={messages.data}
           renderItem={({item}: {item: IMessage}) => {
-            const isImage = Boolean(item.local_image_url || item.image_url);
+            const isImage = Boolean(
+              item.local_media_filename || item.remote_media_url,
+            );
             return (
               <View
                 style={{
@@ -168,30 +177,35 @@ export default function Chat({route, navigation}) {
                       : 'flex-start',
                 }}>
                 {isImage &&
-                  (item.local_image_url ? (
+                  (item.local_media_filename ? (
                     <AutoHeightImage
                       source={{
-                        uri: `file://${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images/${item.local_image_url}`,
+                        uri: `file://${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images/${item.local_media_filename}`,
                       }}
                       width={200}
                     />
                   ) : (
                     <Button
                       onPress={async () => {
+                        const extension = item.media_type?.split('/')[1];
+                        const filename = `IMG_${format(
+                          new Date(),
+                          'yyyyMMdd_HHmmss',
+                        )}.${extension}`;
                         const {promise} = RNFS.downloadFile({
-                          fromUrl: `http://10.0.2.2:5000/localstore/${item.image_url}`,
-                          toFile: `${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images/${item.image_url}`,
+                          fromUrl: item.remote_media_url as string,
+                          toFile: `${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images/${filename}`,
                         });
                         await promise;
 
-                        await updateMessageLocalImageUrl(
+                        await updateMessageLocalImageFilename(
                           item.id as number,
-                          item.image_url as string,
+                          filename,
                         );
 
                         queryClient.invalidateQueries(['messages', recipient]);
                       }}>
-                      download {Math.floor((item.image_size as number) / 1000)}{' '}
+                      download {Math.floor((item.media_size as number) / 1000)}{' '}
                       KB
                     </Button>
                   ))}
@@ -242,8 +256,9 @@ export default function Chat({route, navigation}) {
             icon="image"
             color="#25D366"
             size={30}
-            onPress={onImageSelectPressed}
+            onPress={onGallerySelectPressed}
           />
+
           <TextInput
             placeholder="Type a message..."
             style={{

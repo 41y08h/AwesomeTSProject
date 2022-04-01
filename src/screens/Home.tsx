@@ -12,7 +12,7 @@ import ChatTabScreen from '../components/ChatTabScreen';
 import ContactsTabScreen from '../components/ContactsTabScreen';
 import useEventSubscription from '../hooks/useEventSubscription';
 import {SocketConnection} from '../services/socket';
-import {IMessage} from '../interfaces/message';
+import {IMessage, IMessageType} from '../interfaces/message';
 import {
   getDBConnection,
   insertMessage,
@@ -33,8 +33,8 @@ export default function Home() {
     console.log('connected');
   });
 
-  useEventSubscription('message', async (message: IMessage) => {
-    const {id, text, image_url, sender, receiver, created_at, image_size} =
+  useEventSubscription('message', async message => {
+    const {id, text, media, message_type, sender, receiver, created_at} =
       message;
 
     const db = await getDBConnection();
@@ -42,13 +42,16 @@ export default function Home() {
       id,
       text,
       sender,
+      message_type,
       receiver,
       created_at,
-      image_url,
-      image_size,
+      media_type: media?.type,
+      remote_media_url: media?.url,
+      media_size: media?.size,
     });
 
     queryClient.invalidateQueries(['messages', sender]);
+    queryClient.invalidateQueries('recipients');
     console.log('message received', text);
     const socket = SocketConnection.getInstance();
 
