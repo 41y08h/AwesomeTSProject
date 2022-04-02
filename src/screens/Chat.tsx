@@ -16,12 +16,14 @@ import {format} from 'date-fns';
 import {launchImageLibrary} from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
 import AutoHeightImage from 'react-native-auto-height-image';
+import axios from 'axios';
+import * as ImagePicker from 'react-native-image-picker';
 
 export default function Chat({route, navigation}) {
   const {name, username: recipient} = route.params;
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
-  const {currentUser} = useAuth();
+  const {currentUser, token: authToken} = useAuth();
   const messages = useQuery(['messages', recipient], () =>
     getDBConnection().then(db =>
       getMessages(db, currentUser?.username as string, recipient),
@@ -38,7 +40,6 @@ export default function Chat({route, navigation}) {
   }, [messages.data?.length, flatListRef.current, messages.isFetching]);
 
   useEffect(() => {
-    console.log('changed');
     // Send read receipt
     const socket = SocketConnection.getInstance();
     socket?.emit('read-receipt', {receiptFor: recipient});
@@ -66,7 +67,7 @@ export default function Chat({route, navigation}) {
 
   async function onGallerySelectPressed() {
     const response = await launchImageLibrary({
-      mediaType: 'mixed',
+      mediaType: 'video',
       includeBase64: true,
       selectionLimit: 1,
     });
@@ -94,17 +95,28 @@ export default function Chat({route, navigation}) {
     }`;
     await RNFS.mkdir(dir);
 
-    const extension = media.fileName?.split('.')[1];
+    const extension = media.type?.split('/')[1];
     const filename = `${isImage ? 'IMG' : 'VID'}_${format(
       new Date(),
       'yyyyMMdd_HHmmss',
     )}.${extension}`;
+    const filepath = `${dir}/${filename}`;
+    await RNFS.copyFile(media.uri as string, filepath);
 
-    await RNFS.writeFile(
-      `${RNFS.ExternalStorageDirectoryPath}/ThatsApp Images/${filename}`,
-      media.base64 as string,
-      'base64',
-    );
+    const res = await RNFS.uploadFiles({
+      files: [
+        {
+          name: 'media',
+          filename,
+          filepath,
+          filetype: media.type as string,
+        },
+      ],
+      toUrl: 'http://10.0.2.2:5000/messages/upload-media',
+      headers: {Authorization: `Bearer ${authToken}`},
+    }).promise;
+
+    const {url} = JSON.parse(res.body);
 
     // Insert in database
     const db = await getDBConnection();
@@ -112,6 +124,7 @@ export default function Chat({route, navigation}) {
       text,
       sender: currentUser?.username as string,
       receiver: recipient,
+      media_type: media.type,
       message_type: isImage ? IMessageType.IMAGE : IMessageType.VIDEO,
       local_media_filename: filename,
       media_size: media.base64?.length,
@@ -123,7 +136,7 @@ export default function Chat({route, navigation}) {
       text,
       sendTo: recipient,
       media: {
-        base64: media.base64,
+        url,
         filename: media.fileName,
         type: media.type,
       },
@@ -160,9 +173,7 @@ export default function Chat({route, navigation}) {
           }}
           data={messages.data}
           renderItem={({item}: {item: IMessage}) => {
-            const isImage = Boolean(
-              item.local_media_filename || item.remote_media_url,
-            );
+            const isImage = item.message_type === IMessageType.IMAGE;
             return (
               <View
                 style={{
@@ -209,6 +220,8 @@ export default function Chat({route, navigation}) {
                       KB
                     </Button>
                   ))}
+
+                {item.message_type == IMessageType.VIDEO && <Text>Video</Text>}
 
                 <Text
                   style={{
