@@ -16,8 +16,8 @@ import {format} from 'date-fns';
 import {launchImageLibrary} from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
 import AutoHeightImage from 'react-native-auto-height-image';
-import axios from 'axios';
-import * as ImagePicker from 'react-native-image-picker';
+import Video from 'react-native-video';
+import MessageVideo from '../components/MessageVideo/MessageVideo';
 
 export default function Chat({route, navigation}) {
   const {name, username: recipient} = route.params;
@@ -30,7 +30,6 @@ export default function Chat({route, navigation}) {
     ),
   );
   const flatListRef = createRef<FlatList>();
-
   useEffect(() => {
     if (flatListRef.current) {
       flatListRef.current.scrollToEnd({
@@ -112,7 +111,7 @@ export default function Chat({route, navigation}) {
           filetype: media.type as string,
         },
       ],
-      toUrl: 'http://10.0.2.2:5000/messages/upload-media',
+      toUrl: 'http://7abc-103-152-158-197.ngrok.io/messages/upload-media',
       headers: {Authorization: `Bearer ${authToken}`},
     }).promise;
 
@@ -221,7 +220,18 @@ export default function Chat({route, navigation}) {
                     </Button>
                   ))}
 
-                {item.message_type == IMessageType.VIDEO && <Text>Video</Text>}
+                {item.message_type == IMessageType.VIDEO &&
+                  item.remote_media_url === null && (
+                    <MessageVideo
+                      source={{
+                        uri: `${RNFS.ExternalStorageDirectoryPath}/ThatsApp Videos/${item.local_media_filename}`,
+                      }}
+                      style={{
+                        width: 200,
+                        height: 200,
+                      }}
+                    />
+                  )}
 
                 <Text
                   style={{

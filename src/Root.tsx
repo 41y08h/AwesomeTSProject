@@ -20,7 +20,7 @@ const queryClient = new QueryClient({
           throw new Error('Only strings are allowed in query keys.');
 
         const {data} = await axios.get(url, {
-          baseURL: 'http://10.0.2.2:5000',
+          baseURL: 'http://7abc-103-152-158-197.ngrok.io',
         });
         return data;
       },
