@@ -16,8 +16,8 @@ import {format} from 'date-fns';
 import {launchImageLibrary} from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
 import AutoHeightImage from 'react-native-auto-height-image';
-import Video from 'react-native-video';
 import MessageVideo from '../components/MessageVideo/MessageVideo';
+import Upload from 'react-native-background-upload';
 
 export default function Chat({route, navigation}) {
   const {name, username: recipient} = route.params;
@@ -111,7 +111,7 @@ export default function Chat({route, navigation}) {
           filetype: media.type as string,
         },
       ],
-      toUrl: 'http://7abc-103-152-158-197.ngrok.io/messages/upload-media',
+      toUrl: 'http://10.0.2.2:5000/messages/upload-media',
       headers: {Authorization: `Bearer ${authToken}`},
     }).promise;
 

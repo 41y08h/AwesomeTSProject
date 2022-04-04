@@ -5898,6 +5898,11 @@ react-native-auto-height-image@^3.2.4:
   dependencies:
     prop-types "^15.7.2"
 
+react-native-background-upload@^6.5.1:
+  version "6.5.1"
+  resolved "https://registry.yarnpkg.com/react-native-background-upload/-/react-native-background-upload-6.5.1.tgz#862e1d783e608bdca073ca2d7aeae79503e0507c"
+  integrity sha512-cKVCrpQ7xIePL9rh+TBFQw69Z2eG3tL5/R732+I7lfpq6F9xwrwkYDgxqKfGzTtY3V6JZ3ZENCO8MOMEh6O0jw==
+
 react-native-codegen@^0.0.8:
   version "0.0.8"
   resolved "https://registry.yarnpkg.com/react-native-codegen/-/react-native-codegen-0.0.8.tgz#b7796a54074139d956fff2862cf1285db43c891b"

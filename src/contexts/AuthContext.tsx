@@ -52,13 +52,10 @@ export const AuthProvider: FC = ({children}) => {
       username: string;
       password: string;
     }) {
-      const res = await axios.post(
-        `http://7abc-103-152-158-197.ngrok.io/auth/${type}`,
-        {
-          username,
-          password,
-        },
-      );
+      const res = await axios.post(`http://10.0.2.2:5000/auth/${type}`, {
+        username,
+        password,
+      });
       console.log('OK');
 
       return res.data;
